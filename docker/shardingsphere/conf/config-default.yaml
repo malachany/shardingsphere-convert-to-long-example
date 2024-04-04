@@ -1,0 +1,89 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+databaseName: public_db
+
+dataSources:
+  tenant_default:
+    url: jdbc:mysql://db1:3306/default?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8&useSSL=false&autoCommit=true
+    username: default_user
+    password: password
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 50
+    minPoolSize: 1
+
+  tenant_customer1:
+    url: jdbc:mysql://db2:3306/customer1?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8&useSSL=false&autoCommit=true
+    username: customer_user
+    password: password
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 50
+    minPoolSize: 1
+
+rules:
+  - !SHARDING
+    tables:
+      chats_members:
+        actualDataNodes: tenant_${['default','customer1',]}.chats_members
+        databaseStrategy:
+          standard:
+            shardingColumn: tenant_key
+            shardingAlgorithmName: database_tenant_inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+      chats_messages:
+        actualDataNodes: tenant_${['default','customer1',]}.chats_messages
+        databaseStrategy:
+          standard:
+            shardingColumn: tenant_key
+            shardingAlgorithmName: database_tenant_inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+      chats_messages_read_by_recipient:
+        actualDataNodes: tenant_${['default','customer1',]}.chats_messages_read_by_recipient
+        databaseStrategy:
+          standard:
+            shardingColumn: tenant_key
+            shardingAlgorithmName: database_tenant_inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+
+    defaultDatabaseStrategy:
+      none:
+
+    defaultTableStrategy:
+      none:
+
+    defaultShardingColumn: tenant_key
+    shardingAlgorithms:
+      database_tenant_inline:
+        type: INLINE
+        props:
+          algorithm-expression: tenant_${tenant_key}
+
+    keyGenerators:
+      snowflake:
+        type: SNOWFLAKE
+        props:
+          max-vibration-offset: 2

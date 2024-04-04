@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  db1:
+    image: mysql:8.1.0
+    command: mysqld --sql-mode="" --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    networks:
+      - default_bridge
+    environment:
+      MYSQL_DATABASE: 'default'
+      MYSQL_USER: 'default_user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3307:3306'
+    expose:
+      - 3307
+    volumes:
+      - db1:/var/lib/mysql
+      - ./docker/mysql/default/initdb.d:/docker-entrypoint-initdb.d
+
+  db2:
+    image: mysql:8.1.0
+    command: mysqld --sql-mode="" --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    networks:
+      - default_bridge
+    environment:
+      MYSQL_DATABASE: 'customer1'
+      MYSQL_USER: 'customer_user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3308:3306'
+    expose:
+      - 3307
+    volumes:
+      - db2:/var/lib/mysql
+      - ./docker/mysql/customer1/initdb.d:/docker-entrypoint-initdb.d
+
+  shardingsphere:
+    image: apache/shardingsphere-proxy:5.4.1
+    restart: unless-stopped
+    networks:
+      - default_bridge
+    environment:
+      JVM_OPTS: '-Djava.awt.headless=true'
+      PORT: 3306
+    ports:
+      - '3306:3306'
+    expose:
+      - 3306
+    volumes:
+      - ./docker/shardingsphere/conf:/opt/shardingsphere-proxy/conf
+      - ./docker/shardingsphere/ext-lib:/opt/shardingsphere-proxy/ext-lib
+    depends_on:
+      - db1
+      - db2
+
+networks:
+  default_bridge:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: default_bridge
+
+volumes:
+  db1:
+  db2:
